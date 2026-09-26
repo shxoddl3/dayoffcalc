@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2027·2028 연차 계산기 - 입사일로 연차 개수부터 최적 연휴까지</title>
+<meta name="description" content="내 연차 개수를 넣으면 2027년·2028년 공휴일과 대체공휴일을 반영해 가장 길게 쉬는 날짜를 찾아드립니다. 회사 출근 공휴일, 반차, 제외할 달까지 반영.">
+<meta property="og:title" content="연차 몇 개로 며칠 쉴까? 2027·2028 연차 계산기">
+<meta property="og:description" content="연차 2일로 9일 쉬는 방법, 내 연차에 맞춰 찾아드려요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF3F8; --surface:#FFFFFF; --ink:#18212E; --muted:#5B6878; --line:#D5DEE8;
+  --red:#D93A3F; --blue:#2F63C9; --mark:#FFD84D; --mark-ink:#1E1A08; --soft:#FFF1B8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121821; --surface:#1B2430; --ink:#E8EDF3; --muted:#9AA7B6; --line:#2C3746;
+    --red:#FF6B6E; --blue:#86A9FF; --mark:#F2C21B; --mark-ink:#1E1A08; --soft:#3A3217;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121821; --surface:#1B2430; --ink:#E8EDF3; --muted:#9AA7B6; --line:#2C3746;
+  --red:#FF6B6E; --blue:#86A9FF; --mark:#F2C21B; --mark-ink:#1E1A08; --soft:#3A3217;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
+.wrap{max-width:980px;margin:0 auto;padding:28px 20px 64px}
+.site{font-size:14px;color:var(--muted);font-weight:500;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.years{display:inline-flex;border:2px solid var(--ink);border-radius:10px;overflow:hidden}
+.yb{font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--ink);padding:6px 14px;cursor:pointer}
+.yb small{opacity:.7}
+.yb[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+h1{font-family:"Black Han Sans","IBM Plex Sans KR",sans-serif;font-weight:400;
+  font-size:clamp(32px,7vw,64px);line-height:1.2;margin:0;letter-spacing:-0.5px}
+h1 .line{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.num{color:var(--red)}
+.stepper{display:inline-flex;align-items:center;background:var(--surface);border:2px solid var(--ink);
+  border-radius:14px;overflow:hidden;height:1.2em}
+.stepper button{font:inherit;font-size:.6em;width:1.5em;height:100%;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.stepper button:hover{background:var(--soft)}
+.stepper input{font:inherit;width:2.1em;text-align:center;border:0;background:transparent;color:var(--red);-moz-appearance:textfield;padding:0}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.lead{color:var(--muted);margin:18px 0 0;max-width:62ch}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+.join{margin-top:22px;padding:16px;background:var(--surface);border-radius:12px;max-width:640px}
+.join label{font-weight:700;display:block}
+.join-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.join input{font:inherit;font-size:16px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.jb{font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer}
+.jb[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.join-out{margin:10px 0 0;font-size:14px;color:var(--muted)}
+.join-out b{color:var(--ink)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.btn{font:inherit;font-size:15px;font-weight:500;border:2px solid var(--ink);background:var(--ink);color:var(--bg);
+  border-radius:10px;padding:8px 16px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+section{margin-top:52px}
+h2{font-size:22px;margin:0 0 4px;font-weight:700}
+h3{font-size:17px;margin:0 0 4px}
+.desc{margin:0 0 16px;color:var(--muted);font-size:15px;max-width:66ch}
+.setting{margin-top:20px}
+.opt{display:flex;gap:10px;align-items:center;font-weight:500;cursor:pointer;margin-top:4px}
+.opt input{width:18px;height:18px;accent-color:var(--blue)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip small{color:var(--muted);margin-left:4px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[aria-pressed="true"] small{color:inherit;opacity:.75}
+.hol-chip[aria-pressed="false"]{color:var(--red)}
+.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.row{border-bottom:1px solid var(--line)}
+.row-main{display:flex;gap:12px;align-items:center}
+.alts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 8px 14px;font-size:13px;color:var(--muted)}
+.alt{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}
+.alt[aria-pressed="true"]{background:var(--mark);color:var(--mark-ink);border-color:var(--mark)}
+.pick{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;text-align:left;
+  font:inherit;color:inherit;background:transparent;border:0;padding:14px 8px;cursor:pointer;border-radius:8px}
+.pick:hover{background:var(--surface)}
+.pick[aria-pressed="true"]{background:var(--surface);box-shadow:inset 4px 0 0 var(--mark)}
+.when{font-weight:700}
+.tag{display:inline-block;font-size:13px;font-weight:700;color:var(--red);border:1px solid var(--red);border-radius:6px;padding:0 6px;margin-right:8px;vertical-align:1px}
+.gain{text-align:right;white-space:nowrap}
+.gain b{font-family:"Black Han Sans",sans-serif;font-weight:400;font-size:26px;color:var(--red)}
+.take{grid-column:1/-1;font-size:14px;color:var(--muted)}
+.take mark{background:var(--mark);color:var(--mark-ink);padding:0 4px;border-radius:4px}
+.trip{flex:none;font-size:13px;font-weight:500;color:var(--blue);text-decoration:none;border:1px solid var(--line);
+  border-radius:8px;padding:6px 10px;margin-right:4px;white-space:nowrap}
+.trip:hover{background:var(--surface)}
+.note{margin:14px 0 0;padding:12px 14px;background:var(--surface);border-radius:10px;font-size:14px;color:var(--muted)}
+.note b{color:var(--ink)}
+.empty{padding:16px 8px;color:var(--muted);border-bottom:1px solid var(--line)}
+.cal-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+.months{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:28px 24px;margin-top:18px}
+.month h3{font-size:16px;margin:0 0 6px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:13px}
+.dw{color:var(--muted);font-size:12px;padding-bottom:4px}
+.dw.su{color:var(--red)} .dw.sa{color:var(--blue)}
+.c{padding:5px 0;font-variant-numeric:tabular-nums}
+.c.sa{color:var(--blue)} .c.su,.c.hol{color:var(--red);font-weight:700}
+.c.wk{color:var(--muted);text-decoration:line-through;font-weight:400}
+.c.blk{opacity:.4}
+.c.brk{background:var(--soft)}
+.c.lv{background:var(--mark);color:var(--mark-ink);font-weight:700}
+.c.bs{border-radius:8px 0 0 8px} .c.be{border-radius:0 8px 8px 0} .c.bs.be{border-radius:8px}
+.guide p{max-width:66ch;margin:0 0 14px}
+.guide h3{margin-top:22px}
+.foot{margin-top:56px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+@media (max-width:560px){
+  .row-main{flex-direction:column;align-items:stretch;gap:0}
+  .pick{grid-template-columns:1fr}
+  .gain{text-align:left}
+  .trip{align-self:flex-start;margin:0 0 12px 8px}
+}
+@media (prefers-reduced-motion:no-preference){ html{scroll-behavior:smooth} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <p class="site">연차 계산기</p>
+    <div class="years" role="group" aria-label="연도 선택">
+      <button type="button" class="yb" data-y="2027" aria-pressed="true">2027년</button>
+      <button type="button" class="yb" data-y="2028" aria-pressed="false">2028년 <small>예정</small></button>
+    </div>
+  </div>
+  <p class="note" id="yearNote" hidden style="margin:0 0 20px">2028년은 정부 공식 확정 전 예정 달력입니다. 임시공휴일이 지정되면 결과가 달라질 수 있어요.</p>
+
+  <h1>
+    <span class="line">연차
+      <span class="stepper">
+        <button type="button" id="dec" aria-label="연차 반나절 줄이기">−</button>
+        <input id="n" type="number" min="1" max="30" step="0.5" value="15" inputmode="decimal" aria-label="내 연차 일수">
+        <button type="button" id="inc" aria-label="연차 반나절 늘리기">+</button>
+      </span>일로
+    </span>
+    <span class="line"><span><span class="num" id="total">0</span>일 연휴를 만들 수 있어요</span></span>
+  </h1>
+  <p class="hint">반차가 있다면 0.5일 단위로 입력하세요.</p>
+  <div class="join">
+    <label for="joinDate">내 연차가 몇 개인지 모르겠다면, 입사일을 넣어보세요</label>
+    <div class="join-row">
+      <input type="date" id="joinDate" min="1980-01-01" max="2028-12-31">
+      <div class="years" role="group" aria-label="연차 계산 기준">
+        <button type="button" class="jb" data-b="hire" aria-pressed="true">입사일 기준</button>
+        <button type="button" class="jb" data-b="fiscal" aria-pressed="false">회계연도 기준</button>
+      </div>
+      <button class="btn ghost" id="applyJoin" type="button" hidden></button>
+    </div>
+    <p class="join-out" id="joinOut" aria-live="polite"></p>
+  </div>
+  <p class="lead" id="lead" aria-live="polite"></p>
+  <div class="actions">
+    <button class="btn" id="share" type="button">결과 공유하기</button>
+    <button class="btn ghost" id="img" type="button">이미지로 저장</button>
+  </div>
+
+  <section>
+    <h2>우리 회사 조건</h2>
+    <p class="desc">회사마다 쉬는 날이 달라요. 설정하면 모든 계산에 바로 반영됩니다.</p>
+    <label class="opt"><input type="checkbox" id="six"> 토요일에도 출근해요 (주 6일 근무)</label>
+    <div class="setting">
+      <h3>출근하는 공휴일</h3>
+      <p class="desc" style="margin:0">근무일에 있는 <span class="yr">2027</span>년 공휴일입니다. 출근하는 날을 누르세요.</p>
+      <div class="chips" id="holChips"></div>
+    </div>
+    <div class="setting">
+      <h3>연차를 쓸 수 없는 달</h3>
+      <p class="desc" style="margin:0">바쁜 시기처럼 연차를 못 쓰는 달을 누르면 추천에서 뺍니다.</p>
+      <div class="chips" id="monChips"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>연휴별 추천</h2>
+    <p class="desc">공휴일마다 연차를 가장 알뜰하게 쓰는 날짜와, 연차 5일 이내로 더 길게 쉬는 방법입니다. 누르면 달력에 표시돼요.</p>
+    <ul class="list" id="best"></ul>
+  </section>
+
+  <section>
+    <h2>1년 추천 플랜</h2>
+    <p class="desc">연차 1일당 2.5일 이상 쉬는 효율 좋은 연휴만 골라, 1년 동안 연휴가 가장 길어지는 조합입니다.</p>
+    <ul class="list" id="plan"></ul>
+    <div id="planNote"></div>
+  </section>
+
+  <section id="calendar">
+    <div class="cal-head">
+      <div>
+        <h2><span class="yr">2027</span>년 달력</h2>
+        <p class="desc" id="calcap" style="margin:0">추천 플랜을 표시하고 있어요.</p>
+      </div>
+      <button class="btn ghost" id="reset" type="button" hidden>추천 플랜 다시 보기</button>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--mark)"></i>연차 쓰는 날</span>
+      <span><i class="sw" style="background:var(--soft)"></i>연휴 기간</span>
+      <span><i class="sw" style="background:var(--red)"></i>공휴일·일요일</span>
+      <span><i class="sw" style="background:var(--blue)"></i>토요일</span>
+      <span><s>12</s>출근하는 공휴일</span>
+    </div>
+    <div class="months" id="months"></div>
+  </section>
+
+  <section class="guide">
+    <h2>2027년 연차 쓰기 좋은 날 정리</h2>
+    <p>2027년에는 3일 이상 이어지는 연휴가 10번 있습니다. 관공서 공휴일 기준으로, 연차를 붙이면 연휴가 크게 길어지는 시기를 정리했습니다.</p>
+    <h3>추석: 연차 2일로 9일</h3>
+    <p>추석 연휴는 9월 14일(화)부터 16일(목)까지입니다. 9월 13일(월)과 17일(금)에 연차를 쓰면 9월 11일(토)부터 19일(일)까지 9일을 쉴 수 있어 2027년 최고 효율입니다.</p>
+    <h3>설날: 연차 1일로 5일</h3>
+    <p>설 연휴는 2월 6일(토)부터 대체공휴일인 9일(화)까지 4일입니다. 2월 5일(금)에 연차 1일을 쓰면 5일, 10일부터 12일까지 3일을 쓰면 2월 6일부터 14일까지 9일 연휴가 됩니다.</p>
+    <h3>5월: 연차 1일로 5일</h3>
+    <p>노동절(5월 1일, 토) 대체공휴일인 3일(월)과 어린이날(5일, 수) 사이의 4일(화)에 연차를 쓰면 5월 1일부터 5일까지 쉴 수 있습니다. 부처님오신날(13일, 목) 다음 날인 14일(금)에 연차를 쓰면 4일 연휴가 또 생깁니다.</p>
+    <h3>10월: 연휴 두 번을 이어 10일</h3>
+    <p>개천절 연휴(10월 2일~4일)와 한글날 연휴(10월 9일~11일) 사이 5일부터 8일까지 연차 4일을 쓰면 10월 2일부터 11일까지 10일을 쉴 수 있습니다.</p>
+    <h3>내 연차는 몇 개일까?</h3>
+    <p>근로기준법상 입사 1년 미만이면 한 달 개근할 때마다 1일씩 최대 11일이 생기고, 1년 동안 80% 이상 출근하면 15일이 생깁니다. 3년 이상 근무하면 2년마다 1일씩 늘어 최대 25일까지 받을 수 있습니다. 회사가 1월 1일 기준(회계연도 기준)으로 연차를 준다면, 입사 다음 해에는 첫해 근무 기간에 비례한 연차가 생기고 그다음 해부터 15일이 생깁니다. 위의 입사일 입력란에 날짜를 넣고 기준을 고르면 2027년에 생기는 연차 개수를 바로 계산해 줍니다.</p>
+    <h3>2028년 추석: 연차 1일로 10일 (예정)</h3>
+    <p>2028년은 추석(10월 3일)이 개천절과 겹쳐 10월 5일(목)이 대체공휴일이 됩니다. 추석 연휴 10월 2일~5일에 10월 6일(금) 연차 1일을 더하면 9월 30일(토)부터 한글날인 10월 9일(월)까지 10일을 쉴 수 있습니다. 5월에도 노동절(1일, 월)과 부처님오신날(2일, 화), 어린이날(5일, 금) 사이 3일과 4일에 연차 2일을 쓰면 4월 29일부터 5월 7일까지 9일 연휴가 됩니다. 2028년 달력은 정부 공식 확정 전 예정 기준입니다.</p>
+    <h3>노동절과 제헌절도 쉬나요?</h3>
+    <p>노동절과 제헌절은 2026년부터 관공서 공휴일이 되었고, 2027년에는 둘 다 토요일이라 대체공휴일(5월 3일, 7월 19일)이 생깁니다. 다만 회사마다 실제 휴무는 다를 수 있으니, 위의 출근하는 공휴일 설정에서 우리 회사에 맞게 바꿔 계산하세요.</p>
+  </section>
+
+  <p class="foot">관공서 공휴일(대체공휴일 포함) 기준으로 계산합니다. 회사 휴무 규정에 따라 실제와 다를 수 있어요.<br>
+  여행 링크를 통해 예약하면 운영자가 제휴 수수료를 받을 수 있습니다.</p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// 여행 제휴 승인 후 제휴 링크로 교체하세요.
+const TRIP_URL = "https://flight.naver.com/";
+const HOLS = {
+  2027: {
+    "2027-01-01":"신정",
+    "2027-02-06":"설날 연휴","2027-02-07":"설날","2027-02-08":"설날 연휴","2027-02-09":"설날 대체공휴일",
+    "2027-03-01":"삼일절",
+    "2027-05-01":"노동절","2027-05-03":"노동절 대체공휴일","2027-05-05":"어린이날","2027-05-13":"부처님오신날",
+    "2027-06-06":"현충일",
+    "2027-07-17":"제헌절","2027-07-19":"제헌절 대체공휴일",
+    "2027-08-15":"광복절","2027-08-16":"광복절 대체공휴일",
+    "2027-09-14":"추석 연휴","2027-09-15":"추석","2027-09-16":"추석 연휴",
+    "2027-10-03":"개천절","2027-10-04":"개천절 대체공휴일","2027-10-09":"한글날","2027-10-11":"한글날 대체공휴일",
+    "2027-12-25":"성탄절","2027-12-27":"성탄절 대체공휴일"
+  },
+  // 2028년: 정부 공식 확정 전 예정 (음력 날짜와 대체공휴일 규정으로 산출)
+  2028: {
+    "2028-01-01":"신정",
+    "2028-01-26":"설날 연휴","2028-01-27":"설날","2028-01-28":"설날 연휴",
+    "2028-03-01":"삼일절",
+    "2028-04-12":"국회의원 선거일",
+    "2028-05-01":"노동절","2028-05-02":"부처님오신날","2028-05-05":"어린이날",
+    "2028-06-06":"현충일",
+    "2028-07-17":"제헌절",
+    "2028-08-15":"광복절",
+    "2028-10-02":"추석 연휴","2028-10-03":"추석·개천절","2028-10-04":"추석 연휴","2028-10-05":"개천절 대체공휴일",
+    "2028-10-09":"한글날",
+    "2028-12-25":"성탄절"
+  }
+};
+let YEAR = 2027, HOL = HOLS[YEAR];
+const DOW = ["일","월","화","수","목","금","토"];
+const MIN_EFF = 2.5;
+
+let days = [];
+function buildDays(){
+  days = [];
+  for (let i = 0; ; i++) {
+    const d = new Date(Date.UTC(YEAR, 0, 1 + i));
+    if (d.getUTCFullYear() !== YEAR) break;
+    const m = d.getUTCMonth(), dd = d.getUTCDate();
+    days.push({ i, m, d: dd, w: d.getUTCDay(), key: `${YEAR}-${String(m+1).padStart(2,"0")}-${String(dd).padStart(2,"0")}` });
+  }
+}
+function setYear(y, keep){
+  YEAR = y; HOL = HOLS[y]; buildDays();
+  if (!keep) { worked = new Set(); view = null; }
+  document.querySelectorAll(".yb").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.y === y)));
+  document.querySelectorAll(".yr").forEach(s => s.textContent = y);
+  $("yearNote").hidden = y !== 2028;
+}
+const workHols = () => days.filter(x => HOL[x.key] && x.w !== 0 && (sixDay || x.w !== 6));
+
+let N = 15, sixDay = false, worked = new Set(), noMonths = new Set(), view = null, state;
+const MAX_ONCE = 5;
+const $ = id => document.getElementById(id);
+const holName = x => (HOL[x.key] && !worked.has(x.key)) ? HOL[x.key] : null;
+const isOff = x => x.w === 0 || (x.w === 6 && !sixDay) || !!holName(x);
+const label = i => `${days[i].m+1}월 ${days[i].d}일(${DOW[days[i].w]})`;
+const short = i => `${days[i].m+1}/${days[i].d}(${DOW[days[i].w]})`;
+
+function buildWindows(full){
+  const n = days.length, off = days.map(isOff), pre = [0], preB = [0];
+  for (let i = 0; i < n; i++) {
+    pre.push(pre[i] + (off[i] ? 0 : 1));
+    preB.push(preB[i] + (!off[i] && noMonths.has(days[i].m) ? 1 : 0));
+  }
+  const W = [];
+  for (let s = 0; s < n; s++) {
+    if (s > 0 && off[s-1]) continue;
+    for (let e = s + 2; e < Math.min(n, s + 31); e++) {
+      const k = pre[e+1] - pre[s];
+      if (k > full || preB[e+1] - preB[s] > 0) break;
+      if (e < n - 1 && off[e+1]) continue;
+      if (k < 1) continue;
+      W.push({ s, e, k, L: e - s + 1 });
+    }
+  }
+  return { W, off };
+}
+
+const baseOff = x => x.w === 0 || (x.w === 6 && !sixDay);
+function holTag(w){
+  const names = [];
+  for (let i = w.s; i <= w.e; i++) {
+    const n = holName(days[i]);
+    if (n && !baseOff(days[i])) {
+      const b = n.replace(/ 연휴| 대체공휴일/g, "");
+      b.split("·").forEach(x => { if (!names.includes(x)) names.push(x); });
+    }
+  }
+  return names.join(" + ");
+}
+function bestByHoliday(W, full){
+  const lim = Math.min(full, MAX_ONCE);
+  const C = W.filter(w => w.k <= lim && w.L >= 4 && holTag(w));
+  const byEff = C.slice().sort((a,b) => b.L / b.k - a.L / a.k || b.L - a.L || a.s - b.s);
+  const out = [];
+  for (const w of byEff) { if (out.some(o => !(w.e < o.s || w.s > o.e))) continue; out.push({ ...w }); }
+  out.forEach(m => {
+    // 연차 1일을 더 쓸 때마다 쉬는 날이 2일 이상 늘어나는 경우만 "더 길게" 옵션으로 보여줌
+    const alts = []; let prevL = m.L, prevK = m.k;
+    for (let k = m.k + 1; k <= lim; k++) {
+      let best = null;
+      for (const w of C) if (w.k === k && !(w.e < m.s || w.s > m.e) && (!best || w.L > best.L)) best = w;
+      if (best && best.L - prevL >= 2 * (k - prevK)) { alts.push(best); prevL = best.L; prevK = k; }
+    }
+    m.alts = alts;
+  });
+  return out.sort((a,b) => a.s - b.s);
+}
+
+function bestPlan(W, full){
+  const A = W.filter(w => w.L >= 4 && w.L / w.k >= MIN_EFF).sort((a,b) => a.e - b.e);
+  const m = A.length, ends = A.map(w => w.e), p = new Int32Array(m + 1);
+  for (let j = 1; j <= m; j++) {
+    const lim = A[j-1].s - 1; let lo = 0, hi = j - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (ends[mid] < lim) lo = mid + 1; else hi = mid; }
+    p[j] = lo;
+  }
+  const dp = [new Int16Array(full + 1)];
+  for (let j = 1; j <= m; j++) {
+    const row = new Int16Array(full + 1), prev = dp[j-1], w = A[j-1];
+    for (let b = 0; b <= full; b++) {
+      let v = prev[b];
+      if (w.k <= b) { const c = dp[p[j]][b - w.k] + w.L; if (c > v) v = c; }
+      row[b] = v;
+    }
+    dp.push(row);
+  }
+  const out = []; let j = m, b = full;
+  while (j > 0) {
+    if (dp[j][b] === dp[j-1][b]) j--;
+    else { const w = A[j-1]; out.push(w); b -= w.k; j = p[j]; }
+  }
+  return out.sort((a,b) => a.s - b.s);
+}
+
+const leaveDays = (w, off) => { const r = []; for (let i = w.s; i <= w.e; i++) if (!off[i]) r.push(i); return r; };
+
+function rowHTML(w, off, tagged){
+  const lv = leaveDays(w, off).map(i => `<mark>${short(i)}</mark>`).join(" ");
+  const on = x => !!view && view.s === x.s && view.e === x.e;
+  const alts = (w.alts || []).map(a =>
+    `<button type="button" class="alt" aria-pressed="${on(a)}" data-s="${a.s}" data-e="${a.e}">연차 ${a.k}일이면 ${a.L}일</button>`).join("");
+  return `<li class="row"><div class="row-main">
+    <button type="button" class="pick" aria-pressed="${on(w)}" data-s="${w.s}" data-e="${w.e}">
+      <span class="when">${tagged ? `<span class="tag">${holTag(w)}</span>` : ""}${label(w.s)} ~ ${label(w.e)}</span>
+      <span class="gain">연차 ${w.k}일로 <b>${w.L}</b>일</span>
+      <span class="take">연차 쓸 날 ${lv}</span>
+    </button>
+    <a class="trip" href="${TRIP_URL}" target="_blank" rel="noopener sponsored">항공권·숙소 보기</a></div>
+    ${alts ? `<div class="alts"><span>더 길게 쉬려면</span>${alts}</div>` : ""}</li>`;
+}
+
+function render(){
+  const full = Math.floor(N), half = N - full >= 0.5;
+  const { W, off } = buildWindows(full);
+  const best = bestByHoliday(W, full), plan = bestPlan(W, full);
+  const total = plan.reduce((a,w) => a + w.L, 0), used = plan.reduce((a,w) => a + w.k, 0);
+  state = { off, plan, best, total, used };
+  $("total").textContent = total;
+  $("lead").textContent = plan.length
+    ? `추천 플랜대로 연차 ${used}일을 쓰면 4일 이상 연휴가 ${plan.length}번 생겨요. ${YEAR}년 공휴일과 대체공휴일을 모두 반영했습니다.`
+    : "조건에 맞는 연휴를 찾지 못했어요. 연차 일수나 회사 조건을 바꿔보세요.";
+  $("best").innerHTML = best.length ? best.map(w => rowHTML(w, off, true)).join("") : `<li class="empty">조건에 맞는 연휴가 없어요.</li>`;
+  $("plan").innerHTML = plan.length ? plan.map(w => rowHTML(w, off)).join("") : `<li class="empty">조건에 맞는 연휴가 없어요.</li>`;
+
+  const notes = [];
+  const left = full - used;
+  if (left > 0 && plan.length) notes.push(`<b>남은 연차 ${left}일${half ? "과 반차 1번" : ""}</b>은 효율이 낮아 추천에서 뺐어요. 원하는 날 자유롭게 쓰세요.`);
+  if (half && plan.length) {
+    const top = plan.slice().sort((a,b) => b.L - a.L)[0], pre = top.s - 1;
+    if (pre >= 0 && !off[pre] && !noMonths.has(days[pre].m))
+      notes.push(`<b>반차 활용:</b> ${label(pre)} 오후 반차를 쓰면 ${top.L}일 연휴를 전날 오후부터 시작할 수 있어요.`);
+  }
+  $("planNote").innerHTML = notes.map(t => `<p class="note">${t}</p>`).join("");
+  drawCalendar();
+  saveHash();
+}
+
+function drawCalendar(){
+  const { off, plan } = state;
+  const ws = view ? [view] : plan, inBrk = new Map();
+  ws.forEach(w => { for (let i = w.s; i <= w.e; i++) inBrk.set(i, w); });
+  $("reset").hidden = !view;
+  $("calcap").textContent = view ? `${label(view.s)}부터 ${view.L}일 연휴를 표시하고 있어요.` : "추천 플랜을 표시하고 있어요.";
+  let html = "";
+  for (let m = 0; m < 12; m++) {
+    const md = days.filter(x => x.m === m);
+    html += `<div class="month"><h3>${m+1}월${noMonths.has(m) ? " <small style=\"color:var(--muted);font-weight:400\">연차 불가</small>" : ""}</h3><div class="grid">`;
+    DOW.forEach((d,k) => html += `<span class="dw ${k===0?"su":k===6?"sa":""}">${d}</span>`);
+    for (let k = 0; k < md[0].w; k++) html += `<span></span>`;
+    md.forEach(x => {
+      const h = holName(x), w = inBrk.get(x.i), cls = ["c"];
+      if (x.w === 0) cls.push("su"); else if (x.w === 6) cls.push("sa");
+      if (h) cls.push("hol");
+      if (worked.has(x.key) && x.w !== 0 && (sixDay || x.w !== 6)) cls.push("wk");
+      if (noMonths.has(m) && !off[x.i]) cls.push("blk");
+      if (w) { cls.push(off[x.i] ? "brk" : "lv");
+        if (x.i === w.s || x.w === 0) cls.push("bs");
+        if (x.i === w.e || x.w === 6) cls.push("be"); }
+      const t = HOL[x.key] ? (worked.has(x.key) ? HOL[x.key] + " (출근)" : HOL[x.key]) : "";
+      html += `<span class="${cls.join(" ")}" id="d${x.i}" title="${t}">${x.d}</span>`;
+    });
+    html += `</div></div>`;
+  }
+  $("months").innerHTML = html;
+}
+
+function drawChips(){
+  $("holChips").innerHTML = workHols().map(x =>
+    `<button type="button" class="chip hol-chip" data-k="${x.key}" aria-pressed="${worked.has(x.key)}">${x.m+1}/${x.d}(${DOW[x.w]}) ${HOL[x.key]}${worked.has(x.key) ? "<small>출근</small>" : ""}</button>`).join("");
+  $("monChips").innerHTML = Array.from({length:12}, (_,m) =>
+    `<button type="button" class="chip mon-chip" data-m="${m}" aria-pressed="${noMonths.has(m)}">${m+1}월</button>`).join("");
+}
+
+function select(btn){
+  const s = +btn.dataset.s, e = +btn.dataset.e, { off } = state;
+  let k = 0; for (let i = s; i <= e; i++) if (!off[i]) k++;
+  view = (view && view.s === s && view.e === e) ? null : { s, e, k, L: e - s + 1 };
+  document.querySelectorAll(".pick,.alt").forEach(r =>
+    r.setAttribute("aria-pressed", String(!!view && +r.dataset.s === view.s && +r.dataset.e === view.e)));
+  drawCalendar();
+  if (view) document.getElementById("d" + s).closest(".month").scrollIntoView({ block: "center" });
+}
+
+function setN(v){
+  v = Math.max(1, Math.min(30, Math.round((+v || 1) * 2) / 2));
+  N = v; $("n").value = v; view = null; render();
+}
+
+/* 주소에 설정 저장: 공유 링크를 열면 같은 결과가 보이도록 */
+function saveHash(){
+  const p = new URLSearchParams();
+  p.set("n", N);
+  if (YEAR !== 2027) p.set("y", YEAR);
+  if (sixDay) p.set("s", "1");
+  if (worked.size) p.set("w", [...worked].map(k => k.slice(5).replace("-","")).join(","));
+  if (noMonths.size) p.set("x", [...noMonths].map(m => m + 1).join(","));
+  try { history.replaceState(null, "", "#" + p.toString()); } catch (e) {}
+}
+function loadHash(){
+  try {
+    const p = new URLSearchParams(location.hash.slice(1));
+    if (HOLS[+p.get("y")]) setYear(+p.get("y"), true);
+    if (p.get("s") === "1") sixDay = true;
+    if (p.get("n")) N = Math.max(1, Math.min(30, Math.round(+p.get("n") * 2) / 2)) || 15;
+    (p.get("w") || "").split(",").filter(Boolean).forEach(s => {
+      const k = `${YEAR}-${s.slice(0,2)}-${s.slice(2,4)}`; if (HOL[k]) worked.add(k); });
+    (p.get("x") || "").split(",").filter(Boolean).forEach(s => { const m = +s - 1; if (m >= 0 && m < 12) noMonths.add(m); });
+  } catch (e) {}
+  $("n").value = N;
+  $("six").checked = sixDay;
+}
+
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2200); }
+
+function shareText(){
+  const top = state.best.slice().sort((a,b) => (b.L - b.k) - (a.L - a.k))[0];
+  let s = `연차 ${N}일로 ${YEAR}년에 ${state.total}일 연휴 가능!`;
+  if (top) s += ` ${holTag(top)}엔 연차 ${top.k}일로 ${top.L}일 쉬어요.`;
+  return s;
+}
+async function doShare(){
+  const url = location.href, text = shareText();
+  try {
+    if (navigator.share) { await navigator.share({ title: `${YEAR} 연차 계산기`, text, url }); return; }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(`${text}\n${url}`); toast("링크를 복사했어요. 카톡에 붙여넣으세요."); }
+  catch (e) { window.prompt("아래 내용을 복사하세요", `${text}\n${url}`); }
+}
+
+async function doImage(){
+  try { await document.fonts.ready; } catch (e) {}
+  const W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  g.fillStyle = "#EEF3F8"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#18212E"; g.font = '500 40px "IBM Plex Sans KR", sans-serif'; g.fillText(`${YEAR} 연차 계산기`, 80, 130);
+  g.font = '120px "Black Han Sans", sans-serif';
+  g.fillText(`연차 ${N}일로`, 80, 330);
+  g.fillStyle = "#D93A3F"; g.fillText(`${state.total}일`, 80, 480);
+  const tw = g.measureText(`${state.total}일`).width;
+  g.fillStyle = "#18212E"; g.font = '64px "Black Han Sans", sans-serif'; g.fillText(" 연휴", 80 + tw, 480);
+  const top = state.plan.slice().sort((a,b) => b.L - a.L).slice(0, 4).sort((a,b) => a.s - b.s);
+  let y = 620;
+  g.font = '500 34px "IBM Plex Sans KR", sans-serif'; g.fillStyle = "#5B6878"; g.fillText("가장 긴 연휴", 80, y); y += 30;
+  top.forEach(w => {
+    y += 110;
+    g.fillStyle = "#FFFFFF"; g.fillRect(60, y - 80, W - 120, 100);
+    g.fillStyle = "#18212E"; g.font = '700 38px "IBM Plex Sans KR", sans-serif';
+    g.fillText(`${short(w.s)} ~ ${short(w.e)}`, 90, y - 15);
+    g.fillStyle = "#D93A3F"; g.font = '52px "Black Han Sans", sans-serif';
+    const t = `${w.L}일`; g.fillText(t, W - 90 - g.measureText(t).width, y - 10);
+  });
+  g.fillStyle = "#5B6878"; g.font = '400 30px "IBM Plex Sans KR", sans-serif';
+  g.fillText("내 연차로 계산해보기", 80, H - 90);
+  c.toBlob(async blob => {
+    const file = new File([blob], `${YEAR}-연차-계산.png`, { type: "image/png" });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: `${YEAR} 연차 계산` }); return; }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("이미지를 저장했어요.");
+  }, "image/png");
+}
+
+/* 입사일 기준 연차 (근로기준법 제60조, 출근율 80% 이상 가정) */
+function addMonths(y, m, d, add){
+  const t = m + add, ny = y + Math.floor(t / 12), nm = ((t % 12) + 12) % 12;
+  const last = new Date(Date.UTC(ny, nm + 1, 0)).getUTCDate();
+  return { y: ny, m: nm, d: Math.min(d, last) };
+}
+function calcJoin(){
+  const v = $("joinDate").value, out = $("joinOut"), btn = $("applyJoin");
+  btn.hidden = true;
+  if (!v) { out.textContent = ""; return; }
+  const [y0, m0, d0] = v.split("-").map(Number), m = m0 - 1;
+  if (y0 > YEAR) { out.textContent = `${YEAR}년 이후 입사라면 ${YEAR}년에 생기는 연차가 없어요.`; return; }
+  const md = (o) => `${o.m + 1}월 ${o.d}일`;
+  const dayBefore = (o) => { const t = new Date(Date.UTC(o.y, o.m, o.d - 1)); return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() }; };
+  let monthly = 0, prevMonthly = 0;
+  for (let i = 1; i <= 11; i++) { const a = addMonths(y0, m, d0, i); if (a.y === YEAR) monthly++; if (a.y === YEAR - 1) prevMonthly++; }
+  const k = YEAR - y0;
+  const ann = k >= 1 ? Math.min(25, 15 + Math.floor((k - 1) / 2)) : 0;
+  const an = addMonths(y0, m, d0, 12 * k);
+  const annEnd = dayBefore(addMonths(y0, m, d0, 12 * (k + 1)));
+  const firstEnd = dayBefore(addMonths(y0, m, d0, 12));
+  let msg, total;
+  const basis = document.querySelector(".jb[aria-pressed='true']").dataset.b;
+  const foot = basis === "fiscal"
+    ? `출근율 80% 이상, 회계연도(1월 1일) 기준 계산입니다. 소수점은 회사 규정에 따라 올림하기도 하고, 작년에 남은 연차는 따로 더해 주세요.`
+    : `출근율 80% 이상, 입사일 기준 계산입니다. 작년에 남은 연차는 따로 더해 주세요.`;
+  if (basis === "fiscal" && k >= 1) {
+    if (k === 1) {
+      const jd = Date.UTC(y0, m, d0), ye = Date.UTC(y0, 11, 31);
+      const worked = Math.round((ye - jd) / 86400000) + 1;
+      const yLen = ((y0 % 4 === 0 && y0 % 100 !== 0) || y0 % 400 === 0) ? 366 : 365;
+      const pr = Math.round(15 * worked / yLen * 10) / 10;
+      total = Math.floor(pr * 2) / 2;
+      msg = `회계연도 기준이라 올해 연차가 두 가지로 생겨요.<br>`
+        + `① 1월 1일에 작년 근무 기간(${worked}일)에 비례한 <b>${pr}일</b>: ${YEAR}년 12월 31일까지 쓸 수 있어요.<br>`
+        + (monthly ? `② 입사 1년이 되기 전까지 매달 1일씩 ${monthly}일${prevMonthly ? `(작년에 생긴 ${prevMonthly}일과 함께)` : ""}: ${md(firstEnd)}까지 써야 해요.<br>` : `② 입사 첫해에 매달 생긴 연차 ${prevMonthly}일: ${md(firstEnd)}까지 써야 해요.<br>`)
+        + `추천 계산에는 ①을 반차 단위로 내림한 ${total}일을 넣었어요.`;
+    } else {
+      const n = k - 1;
+      total = Math.min(25, 15 + Math.floor((n - 1) / 2));
+      msg = `${YEAR}년 1월 1일에 연차 <b>${total}일</b>이 생겨 12월 31일까지 쓸 수 있어요.`;
+    }
+    out.innerHTML = msg + `<br><span style="font-size:13px">${foot}</span>`;
+    if (total > 0) { btn.hidden = false; btn.textContent = `연차 ${total}일로 계산하기`; btn.dataset.n = total; }
+    return;
+  }
+  if (k === 0) {
+    total = monthly;
+    msg = `입사 첫해라 한 달 개근할 때마다 1일씩, ${YEAR}년에 연차 <b>${monthly}일</b>이 생겨요. 입사 1년이 되기 전날인 ${firstEnd.y}년 ${md(firstEnd)}까지 써야 해요.`;
+  } else if (k === 1) {
+    total = ann;
+    const before = prevMonthly + monthly;
+    msg = `입사 첫해 연차와 1년 차 연차가 나뉘어 생겨요.<br>`
+      + `① 매달 생기는 연차 최대 ${before}일${prevMonthly && monthly ? `(작년 ${prevMonthly}일, 올해 ${monthly}일)` : ""}: ${YEAR}년 ${md(firstEnd)}까지 써야 소멸되지 않아요.<br>`
+      + `② ${md(an)} 입사 1년이 되면 <b>15일</b>: ${annEnd.y}년 ${md(annEnd)}까지 쓸 수 있어요.<br>`
+      + `추천 계산에는 15일을 넣었어요. ①에서 남은 연차는 ${md(firstEnd)} 전에 따로 챙기세요.`;
+  } else {
+    total = ann;
+    msg = `${YEAR}년 ${md(an)}, 근속 ${k}년이 되면 연차 <b>${ann}일</b>이 새로 생겨 ${annEnd.y}년 ${md(annEnd)}까지 쓸 수 있어요.`;
+  }
+  out.innerHTML = msg + `<br><span style="font-size:13px">${foot}</span>`;
+  if (total > 0) { btn.hidden = false; btn.textContent = `연차 ${Math.min(30, total)}일로 계산하기`; btn.dataset.n = Math.min(30, total); }
+}
+$("joinDate").addEventListener("change", calcJoin);
+document.querySelectorAll(".jb").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".jb").forEach(x => x.setAttribute("aria-pressed", String(x === b))); calcJoin(); });
+$("applyJoin").onclick = e => { setN(+e.target.dataset.n); toast(`연차 ${e.target.dataset.n}일로 계산했어요.`); window.scrollTo({ top: 0 }); };
+
+$("dec").onclick = () => setN(N - 0.5);
+$("inc").onclick = () => setN(N + 0.5);
+$("n").addEventListener("change", e => setN(e.target.value));
+$("reset").onclick = () => { view = null; document.querySelectorAll(".pick,.alt").forEach(r => r.setAttribute("aria-pressed","false")); drawCalendar(); };
+$("six").addEventListener("change", e => { sixDay = e.target.checked; if (!sixDay) worked.forEach(k => { if (days.find(x => x.key === k).w === 6) worked.delete(k); }); view = null; drawChips(); render(); });
+document.querySelectorAll(".yb").forEach(b => b.onclick = () => {
+  const y = +b.dataset.y; if (y === YEAR) return;
+  setYear(y); drawChips(); calcJoin(); render();
+});
+$("share").onclick = doShare;
+$("img").onclick = doImage;
+document.addEventListener("click", e => {
+  const pick = e.target.closest(".pick,.alt"); if (pick) return select(pick);
+  const hc = e.target.closest(".hol-chip");
+  if (hc) { const k = hc.dataset.k; worked.has(k) ? worked.delete(k) : worked.add(k); view = null; drawChips(); render(); return; }
+  const mc = e.target.closest(".mon-chip");
+  if (mc) { const m = +mc.dataset.m; noMonths.has(m) ? noMonths.delete(m) : noMonths.add(m); view = null; drawChips(); render(); }
+});
+
+buildDays();
+loadHash();
+drawChips();
+render();
+</script>
+</body>
+</html>
